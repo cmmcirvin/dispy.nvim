@@ -13,17 +13,13 @@ local commands = {
 
 local function create_commands()
   for _, v in pairs(commands) do
-    local callback = lazy("command", v.func, vim.tbl_get(v, "meta", "retry_on_setup"))
-    vim.api.nvim_create_user_command(v.cmd, callback, v.defn)
+    local command = require(string.format("dispynvim.commands.%s", mod))[v.func](...)
+    vim.api.nvim_create_user_command(v.cmd, command, v.defn)
   end
 end
 
 M.setup = function(opts)
   create_commands()
-end
-
-M.display = function(opts)
-  print("Displaying an image")
 end
 
 return M
