@@ -13,7 +13,7 @@ local commands = {
 
 local function create_commands()
   for _, v in pairs(commands) do
-    local command = require(string.format("dispynvim.commands.%s", mod))[v.func]
+    local command = require("dispynvim.commands")[v.func]
     vim.api.nvim_create_user_command(v.cmd, command, v.defn)
   end
 end
