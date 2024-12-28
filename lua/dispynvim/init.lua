@@ -3,13 +3,10 @@ local M = {}
 local commands = {
   {
     cmd = "DispynvimShowImage",
-    args = "`left/right/float`",
-    func = "toggle",
+    args = "index",
+    func = "display",
     defn = {
-      desc = "Open or close the aerial window. With `!` cursor stays in current window",
-      nargs = "?",
-      bang = true,
-      complete = list_complete({ "left", "right", "float" }),
+      desc = "Display a single image in a floating window",
     },
   },
 }
@@ -25,8 +22,8 @@ M.setup = function(opts)
   create_commands()
 end
 
-M.toggle = function(opts)
-  print("toggle")
+M.display = function(opts)
+  print("Displaying an image")
 end
 
 return M
