@@ -21,6 +21,10 @@ local function create_commands()
   end
 end
 
+M.setup = function(opts)
+  create_commands()
+end
+
 M.toggle = function(opts)
   print("toggle")
 end
