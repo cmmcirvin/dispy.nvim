@@ -23,6 +23,19 @@ function M.new(self, name)
   return new
 end
 
+function M.get_num_images(self)
+  -- Assumes the batch dimension is the first dimension
+  local ndims = table.getn(self.shape)
+  if ndims == 1 then
+    error("Data object is not an image")
+    return
+  elseif ndims == 2 then
+    return 1
+  else
+    return self.shape[1]
+  end
+end
+
 -- Gets the output of a command executed in the dap repl
 function get_dap_repl_output(command)
   -- Create temporary path to store dap repl output
@@ -49,15 +62,15 @@ function calculate_type(name)
 
   local type_str = get_dap_repl_output("type(" .. name .. ")")
 
-  if get_dap_repl_output('"pandas.DataFrame" in "' .. type_str .. '"') == "True" then
+  if get_dap_repl_output('"pandas.core.frame.DataFrame" in "' .. type_str .. '"') == "True" then
     return "pandas.DataFrame"
-  elseif get_dap_repl_output('"np.ndarray" in "' .. type_str .. '"') == "True" then
+  elseif get_dap_repl_output('"numpy.ndarray" in "' .. type_str .. '"') == "True" then
     return "numpy.ndarray"
   elseif get_dap_repl_output('"torch.Tensor" in "' .. type_str .. '"') == "True" then
     return "torch.Tensor"
   end
 
-  return ""
+  error("Could not determine type of data object")
 end
 
 -- Calculates the shape of the data object
@@ -74,10 +87,11 @@ function calculate_shape(name, type)
   shape = string.gsub(shape, "%p", "")
   local dims = {}
   for str in string.gmatch(shape, "([^ ]+)") do
-    table.insert(dims, str)
+    table.insert(dims, tonumber(str))
   end
 
   return dims
 end
 
 return M
+

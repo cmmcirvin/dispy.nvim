@@ -10,18 +10,41 @@ M._get_selected_text = function()
   local m2 = vim.fn.col("'>")
   local line_no = vim.fn.winline()
   local line = vim.api.nvim_get_current_line()
-  return line:sub(m1, m2)
+  local selected_text = line:sub(m1, m2)
+
+  if selected_text == "" then
+    selected_text = vim.fn.expand("<cword>")
+  end
+
+  return selected_text
 end
 
 --- @param index index to display at
-M._display_image = function()
+M.display_single_image = function(idx)
   local image = data:new(M._get_selected_text())
-  print("Displaying an image")
-end
+  if image.type ~= "numpy.ndarray" and image.type ~= "torch.Tensor" then
+    error("Unsupported data type")
+  end
 
--- Takes in a command that outputs an image and saves the image to a temporary file
-M._save_image = function(repl_command)
-  -- create temporary file for image
+  local repl_command
+
+  num_images = image:get_num_images()
+  if num_images > 1 then
+    if idx == nil then
+      idx = math.random(0, num_images - 1)
+    elseif idx < 0 or idx >= num_images then
+      error("Index out of bounds")
+      return
+    end
+    repl_command = image.name .. "[" .. idx .. "]"
+  else
+    repl_command = image.name
+  end
+
+  if image.type == "torch.Tensor" then
+    repl_command = repl_command .. ".cpu().detach().numpy()"
+  end
+
   local tmp_filename = "/tmp/" .. utils.generate_uuid() .. ".png"
 
   require('dap.repl').execute("import matplotlib.pyplot as plt")
@@ -29,9 +52,11 @@ M._save_image = function(repl_command)
 
   while lfs.attributes(tmp_filename, "size") == nil or lfs.attributes(tmp_filename, "size") == 0 do end
 
+  M._open_floating_window(tmp_filename)
+
 end
 
-M._display_image = function(tmp_filename)
+M._open_floating_window = function(tmp_filename)
 
   local win_width = vim.api.nvim_get_option("columns")
   local win_height = vim.api.nvim_get_option("lines")
@@ -46,7 +71,7 @@ M._display_image = function(tmp_filename)
   local buf = vim.api.nvim_create_buf(false, true)
 
   local win = vim.api.nvim_open_win(buf, true, {
-    relative = "cursor",
+    relative = "editor",
     width = floating_win_width,
     height = floating_win_height - 2,
     row = 0,
@@ -76,4 +101,5 @@ M._display_image = function(tmp_filename)
 end
 
 return M
+
 
