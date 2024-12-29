@@ -1,3 +1,4 @@
+local repl = require("dap.repl")
 local data = require("dispynvim.data")
 local utils = require("dispynvim.utils")
 local lfs = require("lfs")
@@ -49,16 +50,18 @@ M.display_single_image = function(idx)
 
   local tmp_filename = "/tmp/" .. utils.generate_uuid() .. ".png"
 
-  require('dap.repl').execute("import matplotlib.pyplot as plt")
-  require('dap.repl').execute("plt.imsave('" .. tmp_filename .. "', " .. repl_command .. ")")
+  repl.execute("import matplotlib.pyplot as plt")
+  repl.execute("plt.imsave('" .. tmp_filename .. "', " .. repl_command .. ")")
 
   utils.confirm_file_written(tmp_filename)
   M._open_floating_window(tmp_filename)
 
 end
 
-M.display_random_images = function()
-  local n_images = 9
+M.display_random_images = function(n_rows, n_cols)
+  n_rows = n_rows or 1
+  n_cols = n_cols or 1
+  local n_images = n_rows * n_cols
   local image = data:new(M._get_selected_text())
   if image.type ~= "numpy.ndarray" and image.type ~= "torch.Tensor" then
     error("Unsupported data type")
@@ -83,12 +86,16 @@ M.display_random_images = function()
   end
 
   repl_command = repl_command .. "[[" .. table.concat(image_idxes, ",") .. "]]"
-  repl_command = "np.concatenate(" .. repl_command .. ", axis=0)"
+  -- repl_command = "np.concatenate(" .. repl_command .. ", axis=0)"
 
   local tmp_filename = "/tmp/" .. utils.generate_uuid() .. ".png"
 
-  require('dap.repl').execute("import matplotlib.pyplot as plt")
-  require('dap.repl').execute("plt.imsave('" .. tmp_filename .. "', " .. repl_command .. ")")
+  repl.execute("import matplotlib.pyplot as plt")
+  repl.execute("fig, axs = plt.subplots(" .. n_rows .. ", " .. n_cols .. ")")
+  repl.execute("for i in range(" .. n_images .. "): axs[i // " .. n_cols .. ", i % " .. n_cols .. "].imshow(" .. repl_command .. "[i])")
+  repl.execute("for i in range(" .. n_images .. "): axs[i // " .. n_cols .. ", i % " .. n_cols .. "].axis('off')")
+  repl.execute("plt.tight_layout()")
+  repl.execute("plt.savefig('" .. tmp_filename .. "', bbox_inches='tight')")
 
   utils.confirm_file_written(tmp_filename)
   M._open_floating_window(tmp_filename)
@@ -119,8 +126,8 @@ M._open_floating_window = function(tmp_filename)
 
   local win = vim.api.nvim_open_win(buf, true, {
     relative = "cursor",
-    width = floating_win_width,
-    height = floating_win_height,
+    width = math.floor(floating_win_width * 1.1),
+    height = math.floor(floating_win_height * 1.1),
     col = 0,
     row = 0,
     style = "minimal",
