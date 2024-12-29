@@ -16,6 +16,8 @@ M._get_selected_text = function()
     selected_text = vim.fn.expand("<cword>")
   end
 
+  print(selected_text)
+
   return selected_text
 end
 
@@ -50,7 +52,7 @@ M.display_single_image = function(idx)
   require('dap.repl').execute("import matplotlib.pyplot as plt")
   require('dap.repl').execute("plt.imsave('" .. tmp_filename .. "', " .. repl_command .. ")")
 
-  while lfs.attributes(tmp_filename, "size") == nil or lfs.attributes(tmp_filename, "size") == 0 do end
+  utils.confirm_file_written(tmp_filename)
 
   M._open_floating_window(tmp_filename)
 
@@ -101,5 +103,6 @@ M._open_floating_window = function(tmp_filename)
 end
 
 return M
+
 
 

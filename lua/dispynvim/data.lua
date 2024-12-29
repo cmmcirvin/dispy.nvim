@@ -42,8 +42,7 @@ function get_dap_repl_output(command)
   local tmp_path = "/tmp/" .. utils.generate_uuid() .. ".txt"
 
   require('dap.repl').execute("open('" .. tmp_path .. "', 'w').write(str(" .. command .. "))")
-
-  while require('lfs').attributes(tmp_path, "size") == nil or require('lfs').attributes(tmp_path, "size") == 0 do end
+  utils.confirm_file_written(tmp_path)
 
   local file = io.open(tmp_path, "r")
   local command_output = file:read("*a")
@@ -94,4 +93,5 @@ function calculate_shape(name, type)
 end
 
 return M
+
 
