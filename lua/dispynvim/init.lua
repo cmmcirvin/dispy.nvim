@@ -53,9 +53,45 @@ M.display_single_image = function(idx)
   require('dap.repl').execute("plt.imsave('" .. tmp_filename .. "', " .. repl_command .. ")")
 
   utils.confirm_file_written(tmp_filename)
-
   M._open_floating_window(tmp_filename)
 
+end
+
+M.display_random_images = function()
+  local n_images = 9
+  local image = data:new(M._get_selected_text())
+  if image.type ~= "numpy.ndarray" and image.type ~= "torch.Tensor" then
+    error("Unsupported data type")
+  end
+
+  local repl_command = image.name
+
+  num_images = image:get_num_images()
+  image_idxes = {}
+  if num_images > n_images then
+    for i = 1, n_images do
+      idx = math.random(0, num_images - 1)
+      table.insert(image_idxes, idx)
+    end
+  else
+    error("Tried to display " .. n_images .. " images, but only " .. num_images .. " images were available.")
+    return
+  end
+
+  if image.type == "torch.Tensor" then
+    repl_command = repl_command .. ".cpu().detach().numpy()"
+  end
+
+  repl_command = repl_command .. "[[" .. table.concat(image_idxes, ",") .. "]]"
+  repl_command = "np.concatenate(" .. repl_command .. ", axis=0)"
+
+  local tmp_filename = "/tmp/" .. utils.generate_uuid() .. ".png"
+
+  require('dap.repl').execute("import matplotlib.pyplot as plt")
+  require('dap.repl').execute("plt.imsave('" .. tmp_filename .. "', " .. repl_command .. ")")
+
+  utils.confirm_file_written(tmp_filename)
+  M._open_floating_window(tmp_filename)
 end
 
 M._open_floating_window = function(tmp_filename)
@@ -67,32 +103,53 @@ M._open_floating_window = function(tmp_filename)
   local image = api.from_file(tmp_filename)
   local aspect_ratio = image.image_height / image.image_width
 
-  local floating_win_width = math.floor(win_width * 0.5)
-  local floating_win_height = math.floor(floating_win_width * aspect_ratio / 2)
+  local macos_cell_aspect_ratio = 18 / 40
+
+  local floating_win_width
+  local floating_win_height
+  if aspect_ratio <= 1 then
+    floating_win_width = math.floor(win_width * 0.5)
+    floating_win_height = math.floor(floating_win_width * aspect_ratio * macos_cell_aspect_ratio)
+  elseif aspect_ratio > 1 then
+    floating_win_height = math.floor(win_height * 0.5)
+    floating_win_width = math.floor(floating_win_height / aspect_ratio / macos_cell_aspect_ratio)
+  end
 
   local buf = vim.api.nvim_create_buf(false, true)
 
   local win = vim.api.nvim_open_win(buf, true, {
-    relative = "editor",
+    relative = "cursor",
     width = floating_win_width,
-    height = floating_win_height - 2,
-    row = 0,
+    height = floating_win_height,
     col = 0,
+    row = 0,
     style = "minimal",
     border = "none",
   })
 
-  local image = api.from_file(tmp_filename, {buffer=buf, window=win, height=floating_win_height, x=0, y=0})
+  local ns = vim.api.nvim_create_namespace("transparent_bgd")
+  vim.api.nvim_set_hl(ns, 'Normal', {bg = 'none'})
+  vim.api.nvim_win_set_hl_ns(win, ns)
 
-  image.max_height_window_percentage = 100
-  image.max_width_window_percentage = 100
+  local image = api.from_file(tmp_filename, {
+    buffer=buf,
+    window=win,
+    width=floating_win_width,
+    height=floating_win_height,
+    with_virtual_padding=false,
+    x=0,
+    y=0,
+  })
+
+  -- BUG: Floating window is occasionally slightly larger than image
   image:render()
 
   -- Clear image when buffer is closed
-  vim.api.nvim_create_autocmd({"BufWinLeave"}, {
+  vim.api.nvim_create_autocmd({"BufLeave"}, {
     buffer=buf,
     callback=function()
       image:clear()
+      vim.api.nvim_win_close(win, true)
       local success = os.remove(tmp_filename)
       if not success then
         print("Error removing temporary image file: " .. tmp_filename)
