@@ -1,14 +1,8 @@
--- Stores an individual pytorch tensor
--- and defines functions to manipulate and display it.
-
----@class dispynvim.data
----@field name string
----@field shape table
-
 local utils = require('dispynvim.utils')
 
 local M = {}
 
+-- Creates a new data object
 function M.new(self, name)
   local shape = calculate_shape(name)
 
@@ -20,6 +14,7 @@ function M.new(self, name)
   return new
 end
 
+-- Calculates the number of images in the data object
 function M.get_num_images(self)
   -- Assumes shape (batch, channels, height, width) or (channels, height, width)
   local ndims = table.getn(self.shape)
@@ -74,5 +69,3 @@ function calculate_shape(name)
 end
 
 return M
-
-

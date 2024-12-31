@@ -13,6 +13,8 @@ function M.generate_uuid()
   return uuid
 end
 
+-- Confirms that a file has been created and written to successfully
+-- Hacky logic, works by creating a temporary file and confirming the output matches
 function M.confirm_file_written()
   local filename = "/tmp/" .. M.generate_uuid() .. ".txt"
   repl.execute("open('" .. filename .. "', 'w').write('done')")
@@ -35,4 +37,3 @@ function M.confirm_file_written()
 end
 
 return M
-

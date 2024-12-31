@@ -5,7 +5,12 @@ local lfs = require("lfs")
 
 local M = {}
 
---- Gets currently selected text
+M.setup = function()
+
+end
+
+-- Gets currently selected text under cursor
+-- Defaults to the word under cursor if no text is selected
 M._get_selected_text = function()
   local m1 = vim.fn.col("'<")
   local m2 = vim.fn.col("'>")
@@ -20,16 +25,21 @@ M._get_selected_text = function()
   return selected_text
 end
 
+-- Ensures that there is an active nvim-dap session
 M.ensure_active_dap_session = function()
   if not require('dap').session() then
     error("No active nvim-dap session")
   end
 end
 
+-- Imports the required python libraries for the current session
 M.run_imports = function()
-  repl.execute("import matplotlib.pyplot as plt")
-  repl.execute("import lovely_tensors as lt")
-  repl.execute("lt.monkey_patch()")
+  if M.imported == nil then
+    repl.execute("import matplotlib.pyplot as plt")
+    repl.execute("import lovely_tensors as lt")
+    repl.execute("lt.monkey_patch()")
+    M.imported = true
+  end
 end
 
 -- Plots statistics of the selected tensor as an image
@@ -60,7 +70,7 @@ M.print_statistics = function()
   M._open_floating_text(tmp_filename)
 end
 
---- @param index index to display at
+-- Displays the selected tensor as an image
 M.display_single_image = function(idx)
   M.ensure_active_dap_session()
   M.run_imports()
@@ -144,16 +154,9 @@ M.display_random_images = function(n_images)
     return
   end
 
-  -- repl_command = repl_command .. ".cpu().detach().numpy()"
   repl_command = repl_command .. "[[" .. table.concat(image_idxes, ",") .. "]]"
 
   local tmp_filename = "/tmp/" .. utils.generate_uuid() .. ".png"
-
-  -- repl.execute("fig, axs = plt.subplots(" .. n_rows .. ", " .. n_cols .. ")")
-  -- repl.execute("for i in range(" .. n_images .. "): axs[i // " .. n_cols .. ", i % " .. n_cols .. "].imshow(" .. repl_command .. "[i])")
-  -- repl.execute("for i in range(" .. n_images .. "): axs[i // " .. n_cols .. ", i % " .. n_cols .. "].axis('off')")
-  -- repl.execute("plt.tight_layout()")
-  -- repl.execute("plt.savefig('" .. tmp_filename .. "', bbox_inches='tight')")
 
   repl.execute(repl_command .. ".rgb.fig.savefig('" .. tmp_filename .. "')")
 
@@ -161,6 +164,7 @@ M.display_random_images = function(n_images)
   M._open_floating_image(tmp_filename)
 end
 
+-- Opens a new floating window to display an image
 M._open_floating_image = function(tmp_filename)
 
   local win_width = vim.api.nvim_get_option("columns")
@@ -234,6 +238,7 @@ M._open_floating_image = function(tmp_filename)
 
 end
 
+-- Opens a new floating window to display text
 M._open_floating_text = function(tmp_filename)
 
   local win_width = vim.api.nvim_get_option("columns")
@@ -272,6 +277,3 @@ M._open_floating_text = function(tmp_filename)
 end
 
 return M
-
-
-
