@@ -5,8 +5,14 @@ local lfs = require("lfs")
 
 local M = {}
 
-M.setup = function()
+M.setup = function(cfg)
+  default_cfg = {
+    n_images = 4,
+    cell_aspect_ratio = 18 / 40, -- cell aspect ratio (macos)
+    scale = 0.5
+  }
 
+  M.cfg = vim.tbl_deep_extend("force", default_cfg, cfg)
 end
 
 -- Gets currently selected text under cursor
@@ -134,23 +140,22 @@ M.plot_weights = function(idx)
 
 end
 
-M.display_random_images = function(n_images)
+M.display_random_images = function()
   M.ensure_active_dap_session()
   M.run_imports()
 
   local image = data:new(M._get_selected_text())
-
   local repl_command = image.name
 
   num_images = image:get_num_images()
   image_idxes = {}
-  if num_images > n_images then
-    for i = 1, n_images do
+  if num_images > M.cfg.n_images then
+    for i = 1, M.cfg.n_images do
       idx = math.random(0, num_images - 1)
       table.insert(image_idxes, idx)
     end
   else
-    error("Tried to display " .. n_images .. " images, but only " .. num_images .. " images were available.")
+    error("Tried to display " .. M.cfg.n_images .. " images, but only " .. num_images .. " images were available.")
     return
   end
 
@@ -174,17 +179,14 @@ M._open_floating_image = function(tmp_filename)
   local image = api.from_file(tmp_filename)
   local aspect_ratio = image.image_height / image.image_width
 
-  -- cell aspect ratio (macos)
-  local cell_aspect_ratio = 18 / 40
-
   local floating_win_width
   local floating_win_height
   if aspect_ratio <= 1 then
-    floating_win_width = math.floor(win_width * 0.7)
-    floating_win_height = math.floor(floating_win_width * aspect_ratio * cell_aspect_ratio)
+    floating_win_width = math.floor(win_width * M.cfg.scale)
+    floating_win_height = math.floor(floating_win_width * aspect_ratio * M.cfg.cell_aspect_ratio)
   elseif aspect_ratio > 1 then
-    floating_win_height = math.floor(win_height * 0.7)
-    floating_win_width = math.floor(floating_win_height / aspect_ratio / cell_aspect_ratio)
+    floating_win_height = math.floor(win_height * M.cfg.scale)
+    floating_win_width = math.floor(floating_win_height / aspect_ratio / M.cfg.cell_aspect_ratio)
   end
 
   if floating_win_width == 0 then
@@ -262,6 +264,10 @@ M._open_floating_text = function(tmp_filename)
     border = "none",
   })
   vim.api.nvim_command("$read" .. tmp_filename)
+
+  local ns = vim.api.nvim_create_namespace("transparent_bgd")
+  vim.api.nvim_set_hl(ns, 'Normal', {bg = 'none'})
+  vim.api.nvim_win_set_hl_ns(win, ns)
 
   vim.api.nvim_create_autocmd({"BufLeave"}, {
     buffer=buf,
