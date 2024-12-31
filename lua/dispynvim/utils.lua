@@ -1,4 +1,5 @@
 local lfs = require("lfs")
+local repl = require("dap.repl")
 
 local M = {}
 
@@ -12,7 +13,10 @@ function M.generate_uuid()
   return uuid
 end
 
-function M.confirm_file_written(filename)
+function M.confirm_file_written()
+  local filename = "/tmp/" .. M.generate_uuid() .. ".txt"
+  repl.execute("open('" .. filename .. "', 'w').write('done')")
+
   -- Make sure the file is written to
   local start = os.time()
   local file_size = lfs.attributes(filename, "size")
@@ -24,6 +28,10 @@ function M.confirm_file_written(filename)
       return
     end
   end
+
+  local file = io.open(filename, "r")
+  assert(file:read("*a") == "done")
+  file:close()
 end
 
 return M
