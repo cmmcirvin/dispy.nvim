@@ -40,12 +40,9 @@ end
 
 -- Imports the required python libraries for the current session
 M.run_imports = function()
-  if M.imported == nil then
-    repl.execute("import matplotlib.pyplot as plt")
-    repl.execute("import lovely_tensors as lt")
-    repl.execute("lt.monkey_patch()")
-    M.imported = true
-  end
+  repl.execute("import matplotlib.pyplot as plt")
+  repl.execute("import lovely_tensors as lt")
+  repl.execute("lt.monkey_patch()")
 end
 
 -- Plots statistics of the selected tensor as an image
@@ -98,10 +95,14 @@ M.display_single_image = function(idx)
     repl_command = image.name
   end
 
-  repl_command = repl_command .. ".rgb"
+  if (#image.shape == 3 and image.shape[1] == 1) or (#image.shape == 4 and image.shape[2] == 1) then
+    repl_command = repl_command .. ".repeat(3, 1, 1)"
+  elseif #image.shape == 2 then
+    repl_command = repl_command .. ".unsqueeze(0).repeat(3, 1, 1)"
+  end
 
   local tmp_filename = "/tmp/" .. utils.generate_uuid() .. ".png"
-  repl.execute(repl_command .. ".fig.savefig('" .. tmp_filename .. "')")
+  repl.execute(repl_command .. ".rgb.fig.savefig('" .. tmp_filename .. "')")
 
   utils.confirm_file_written()
 
@@ -160,6 +161,10 @@ M.display_random_images = function()
   end
 
   repl_command = repl_command .. "[[" .. table.concat(image_idxes, ",") .. "]]"
+
+  if #image.shape == 4 and image.shape[2] == 1 then
+    repl_command = repl_command .. ".repeat(1, 3, 1, 1)"
+  end
 
   local tmp_filename = "/tmp/" .. utils.generate_uuid() .. ".png"
 
