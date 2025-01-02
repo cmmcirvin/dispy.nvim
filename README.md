@@ -51,6 +51,10 @@ vim.keymap.set({'n', 'v'}, '<leader>ps', ':lua require("dispynvim").plot_statist
 vim.keymap.set({'n', 'v'}, '<leader>pt', ':lua require("dispynvim").print_statistics()<CR>')
 ```
 
+dispy.nvim also uses the `luafilesystem` library, which can be installed via `luarocks`.
+
+You should also ensure `torch`, `matplotlib` and `lovely-tensors` are installed and accessible by your running Python program.
+
 ## 🚧 Future Work
 - Currently, the plugin has been tested on MacOS only.
 - Extend support to numpy arrays / pandas dataframes
