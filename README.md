@@ -14,7 +14,9 @@ While you're debugging your Python code, dispy.nvim lets you
 
 ## ⚡️ Requirements
 - Neovim 0.10.x
+- [nvim-dap](https://github.com/mfussenegger/nvim-dap) - Debug Adapter Protocol client for Neovim
 - [image.nvim](https://github.com/3rd/image.nvim) - used to display images in Kitty
+- [PyTorch](https://github.com/pytorch/pytorch) - tensor package
 - [lovely-tensors](https://github.com/xl0/lovely-tensors) - takes care of some of the plotting / statistical functionality automatically
 
 ## 📦 Installation
