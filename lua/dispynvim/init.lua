@@ -83,7 +83,7 @@ M.display_single_image = function(idx)
 
   num_images = image:get_num_images()
   print(num_images)
-  if num_images > 1 then
+  if num_images > 1 or #image.shape == 4 then
     if idx == nil then
       idx = math.random(0, num_images - 1)
     elseif idx < 0 or idx >= num_images then
@@ -91,14 +91,24 @@ M.display_single_image = function(idx)
       return
     end
     repl_command = image.name .. "[" .. idx .. "]"
+    image.shape = {select(2, unpack(image.shape))}
   else
     repl_command = image.name
   end
 
-  if (#image.shape == 3 and image.shape[1] == 1) or (#image.shape == 4 and image.shape[2] == 1) then
+  if #image.shape == 2 then
+    repl_command = repl_command .. ".unsqueeze(0)"
+    image.shape = {1, select(1, unpack(image.shape))}
+  end
+
+  if not vim.tbl_contains({1, 3, 4}, image.shape[1]) then
+    repl_command = repl_command .. ".permute(2, 0, 1)"
+    image.shape = {image.shape[3], image.shape[1], image.shape[2]}
+  end
+
+  if #image.shape == 3 and image.shape[1] == 1 then
     repl_command = repl_command .. ".repeat(3, 1, 1)"
-  elseif #image.shape == 2 then
-    repl_command = repl_command .. ".unsqueeze(0).repeat(3, 1, 1)"
+    image.shape = {3, select(2, unpack(image.shape))}
   end
 
   local tmp_filename = "/tmp/" .. utils.generate_uuid() .. ".png"

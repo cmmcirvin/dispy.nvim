@@ -16,22 +16,27 @@ end
 
 -- Calculates the number of images in the data object
 function M.get_num_images(self)
-  -- Assumes shape (batch, channels, height, width) or (channels, height, width)
   local ndims = table.getn(self.shape)
   if ndims == 1 then
+    -- Not an image
     error("Data is not an image")
     return
-  elseif ndims == 2 or ndims == 2 then
+  elseif ndims == 2 then
+    -- A single image
     return 1
   elseif ndims == 3 then
-    if self.shape[1] == 3 or self.shape[1] == 4 then
+    if self.shape[1] == 3 or self.shape[3] == 3 then
+      -- RGB image (channels, height, width) or (height, width, channels)
       return 1
     else
-      error("Expected 3 (RGB) or 4 (RGBA) channels, got " .. self.shape[1])
+      -- Batch of images, assumes size (batch, height, width)
+      return self.shape[1]
     end
-  else
-    -- Batch dimension
+  elseif ndims == 4 then
+    -- Assumes batch is the first dimension
     return self.shape[1]
+  else
+    error("Data has too many dimensions")
   end
 end
 
