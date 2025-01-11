@@ -14,7 +14,9 @@ While you're debugging your Python code, dispy.nvim lets you
 
 ## ⚡️ Requirements
 - Neovim 0.10.x
+- [nvim-dap](https://github.com/mfussenegger/nvim-dap) - Debug Adapter Protocol client for Neovim
 - [image.nvim](https://github.com/3rd/image.nvim) - used to display images in Kitty
+- [PyTorch](https://github.com/pytorch/pytorch) - tensor package
 - [lovely-tensors](https://github.com/xl0/lovely-tensors) - takes care of some of the plotting / statistical functionality automatically
 
 ## 📦 Installation
@@ -50,6 +52,10 @@ vim.keymap.set({'n', 'v'}, '<leader>pl', ':lua require("dispynvim").display_rand
 vim.keymap.set({'n', 'v'}, '<leader>ps', ':lua require("dispynvim").plot_statistics()<CR>')
 vim.keymap.set({'n', 'v'}, '<leader>pt', ':lua require("dispynvim").print_statistics()<CR>')
 ```
+
+dispy.nvim also uses the `luafilesystem` library, which can be installed via `luarocks`.
+
+You should also ensure `torch`, `matplotlib` and `lovely-tensors` are installed and accessible by your running Python program.
 
 ## 🚧 Future Work
 - Currently, the plugin has been tested on MacOS only.
