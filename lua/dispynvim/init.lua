@@ -15,34 +15,59 @@ local function create_script()
 #   "torch",
 #   "matplotlib",
 #   "lovely_tensors",
+#   "pandas",
 #   "argparse"
 # ]
 # ///
 
+import argparse
+import matplotlib.pyplot as plt
+import pandas as pd
 import sys
 import torch
-import argparse
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--mode", choices=["show_tensor", "plot_statistics"], help="Mode to display the tensor", default="show_tensor")
-parser.add_argument("--filename", help="Filename of the tensor to display", default="/tmp/tmp.pkl")
-parser.add_argument("--suptitle", help="Matplotlib title", default=None)
+parser.add_argument("--mode", choices=["show_tensor", "plot_statistics", "time_series"], help="Mode to display the tensor", default="show_tensor")
+parser.add_argument("--tensor_name", help="Name of the tensor", default=None)
 args = parser.parse_args()
 
-tensor = __import__('pickle').load(open(args.filename, 'rb'))
+tensor = torch.tensor(__import__('pickle').load(open("/tmp/dispy.pkl", 'rb')))
 
 if args.mode == "show_tensor":
-    import torchshow as ts
-    # Use torchshow to save the tensor as an image
-    ts.show(tensor, suptitle=args.suptitle)
+    # If IQ data, plot a spectrogram
+    if tensor.is_complex():
+      plt.specgram(tensor)
+      plt.title("Spectrogram")
+      plt.show()
+    else:
+      import torchshow as ts
+      # Use torchshow to save the tensor as an image
+      ts.show(tensor, suptitle=args.tensor_name)
 elif args.mode == "plot_statistics":
-    import lovely_tensors as lt
-    import matplotlib.pyplot as plt
     # Use lovely_tensors to plot tensor statistics
-    fig = plt.figure()
-    ax = fig.add_subplot()
-    lt.plot(torch.tensor(tensor), ax=ax)
+    import lovely_tensors as lt
+    if tensor.is_complex():
+      fig, axs = plt.subplots(2, 1)
+      lt.plot(tensor.real, ax=axs[0])
+      axs[0].set_ylabel("Real", rotation=90, va="center", labelpad=15)
+      lt.plot(tensor.imag, ax=axs[1])
+      axs[1].set_ylabel("Imaginary", rotation=90, va="center", labelpad=15)
+    else:
+      fig = plt.figure()
+      ax = fig.add_subplot()
+      lt.plot(tensor, ax=ax)
     plt.show()
+elif args.mode == "time_series":
+    import seaborn as sns
+    if tensor.is_complex():
+      df = pd.DataFrame({'real': tensor.numpy().real, 'imag': tensor.numpy().imag})
+      sns.lineplot(data=df, x='real', y='imag')
+    else:
+      df = pd.DataFrame({'x': tensor.numpy()})
+      sns.lineplot(data=df, x='x', y='y')
+    plt.show()
+else:
+    raise ValueError("Invalid mode: {}".format(args.mode))
 
 ]=]
 
@@ -69,14 +94,13 @@ end
 
 M._open_window = function(args)
 
-
   local command = M.cfg.script_path
   for key, value in pairs(args) do
     command = command .. ' --' .. key .. ' ' .. vim.fn.shellescape(value)
   end
 
-  M.current_job_id = vim.fn.jobstart(command, {
-    rpc = true
+  vim.fn.jobstart(command, {
+    rpc = true,
   })
 
 end
@@ -111,53 +135,33 @@ M.run_imports = function()
   repl.execute("lt.monkey_patch()")
 end
 
-M._save_tensor_to_pkl = function(selected_text)
+M._save_tensor_to_pkl = function(tensor_name)
 
   local args = {
-    expression = "__import__('pickle').dump(" .. selected_text .. ", open('/tmp/dispy.pkl', 'wb'))",
+    expression = "__import__('pickle').dump(" .. tensor_name .. ", open('/tmp/dispy.pkl', 'wb'))",
     context = "repl"
   }
 
   local session = require('dap').session()
   session:evaluate(args, function(err, resp)
     if err then
-      error("Error saving tensor [" .. selected_text .. "]: " .. err.message)
+      error("Error saving tensor [" .. tensor_name .. "]: " .. err.message)
       return
     end
   end)
 
 end
 
-M._plot = function(args)
+M.plot = function(args)
+
+  args.tensor_name = M._get_selected_text()
+
+  print(args.tensor_name)
+  print(args.mode)
 
   M.ensure_active_dap_session()
-  M._save_tensor_to_pkl(M._get_selected_text())
+  M._save_tensor_to_pkl(args.tensor_name)
   M._open_window(args)
-
-end
-
--- Displays the tensor as an image
-M.show_tensor = function()
-
-  local args = {
-    mode = "show_tensor",
-    filename = "/tmp/dispy.pkl",
-    suptitle = M._get_selected_text(),
-  }
-
-  M._plot(args)
-
-end
-
--- Plots relevant statistics
-M.plot_statistics = function()
-
-  local args = {
-    mode = "plot_statistics",
-    filename = "/tmp/dispy.pkl",
-  }
-
-  M._plot(args)
 
 end
 

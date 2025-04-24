@@ -40,26 +40,6 @@ function M.get_num_images(self)
   end
 end
 
--- Gets the output of a command executed in the dap repl
-function get_dap_repl_output(command)
-  -- Create temporary path to store dap repl output
-  local tmp_path = "/tmp/" .. utils.generate_uuid() .. ".txt"
-
-  require('dap.repl').execute("open('" .. tmp_path .. "', 'w').write(str(" .. command .. "))")
-  utils.confirm_file_written(tmp_path)
-
-  local file = io.open(tmp_path, "r")
-  local command_output = file:read("*a")
-  file:close()
-
-  local success = os.remove(tmp_path)
-  if not success then
-    print("Error removing temporary file: " .. tmp_path)
-  end
-
-  return command_output
-end
-
 -- Calculates the shape of the data object
 function calculate_shape(name)
   local shape = get_dap_repl_output("list(iter(" .. name .. ".shape))")
