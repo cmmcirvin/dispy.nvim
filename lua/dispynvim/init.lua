@@ -1,7 +1,4 @@
 local repl = require("dap.repl")
-local data = require("dispynvim.data")
-local utils = require("dispynvim.utils")
-local lfs = require("lfs")
 
 local M = {}
 
